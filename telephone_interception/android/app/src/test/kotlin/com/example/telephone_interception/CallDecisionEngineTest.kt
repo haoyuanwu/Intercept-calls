@@ -29,6 +29,40 @@ class CallDecisionEngineTest {
     }
 
     @Test
+    fun `different numbers sharing last seven digits do not match whitelist`() {
+        val decision = engine.evaluate(
+            "13900138000",
+            policy(whitelist = setOf("13800138000")),
+        )
+
+        assertEquals(DecisionAction.ALLOW, decision.action)
+        assertEquals("normal", decision.category)
+        assertEquals("未命中规则，默认放行", decision.reason)
+    }
+
+    @Test
+    fun `different numbers sharing last seven digits do not match blacklist`() {
+        val decision = engine.evaluate(
+            "13900138000",
+            policy(blacklist = setOf("13800138000")),
+        )
+
+        assertFalse(decision.blocked)
+        assertEquals("normal", decision.category)
+    }
+
+    @Test
+    fun `country code variants still match exact user numbers`() {
+        val decision = engine.evaluate(
+            "+86 138-0013-8000",
+            policy(blacklist = setOf("8613800138000")),
+        )
+
+        assertTrue(decision.blocked)
+        assertEquals("blacklist", decision.category)
+    }
+
+    @Test
     fun `does not block a number outside configured prefixes`() {
         val decision = engine.evaluate("16612345678", policy(prefixes = setOf("170")))
 
@@ -49,6 +83,15 @@ class CallDecisionEngineTest {
         val decision = engine.evaluate("95501", policy())
 
         assertEquals(DecisionAction.ALLOW, decision.action)
+    }
+
+    @Test
+    fun `blacklist takes priority over protected bank number`() {
+        val decision = engine.evaluate("95588", policy(blacklist = setOf("95588")))
+
+        assertEquals(DecisionAction.BLOCK, decision.action)
+        assertEquals("blacklist", decision.category)
+        assertEquals("用户黑名单拦截", decision.reason)
     }
 
     @Test
@@ -92,6 +135,7 @@ class CallDecisionEngineTest {
 
     private fun policy(
         prefixes: Set<String> = emptySet(),
+        blacklist: Set<String> = emptySet(),
         whitelist: Set<String> = emptySet(),
         builtInRules: Boolean = true,
     ) = ScreeningPolicy(
@@ -103,7 +147,7 @@ class CallDecisionEngineTest {
         blockCarrier = false,
         builtInRulesEnabled = builtInRules,
         repeatedCallProtection = true,
-        blacklist = emptySet(),
+        blacklist = blacklist,
         whitelist = whitelist,
         blockedPrefixes = prefixes,
         labels = emptyMap(),

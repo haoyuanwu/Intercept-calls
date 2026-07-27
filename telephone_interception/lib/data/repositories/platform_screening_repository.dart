@@ -93,6 +93,9 @@ class PlatformScreeningRepository implements ScreeningRepository {
   @override
   Future<void> clearRecords() => _dataSource.clearRecords();
 
+  @override
+  Future<void> dialNumber(String number) => _dataSource.dialNumber(number);
+
   static Set<String> _stringSet(Object? value) =>
       Set.unmodifiable((value as List? ?? const []).map((item) => '$item'));
 }

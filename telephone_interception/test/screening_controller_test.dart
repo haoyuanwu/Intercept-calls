@@ -62,4 +62,7 @@ class _FakeRepository implements ScreeningRepository {
 
   @override
   Future<void> clearRecords() async {}
+
+  @override
+  Future<void> dialNumber(String number) async {}
 }

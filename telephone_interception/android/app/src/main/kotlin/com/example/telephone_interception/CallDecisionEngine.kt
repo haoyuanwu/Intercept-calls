@@ -47,14 +47,14 @@ class CallDecisionEngine {
             )
         }
 
+        if (policy.blacklist.any { numbersMatch(it, number) }) {
+            return decision(number, BLACKLIST, DecisionAction.BLOCK, "用户黑名单拦截")
+        }
         if (policy.whitelist.any { numbersMatch(it, number) }) {
             return decision(number, WHITELIST, DecisionAction.ALLOW, "用户白名单放行")
         }
         if (policy.builtInRulesEnabled && isProtectedBankNumber(number)) {
             return decision(number, WHITELIST, DecisionAction.ALLOW, "银行官方号码保护放行")
-        }
-        if (policy.blacklist.any { numbersMatch(it, number) }) {
-            return decision(number, BLACKLIST, DecisionAction.BLOCK, "用户黑名单拦截")
         }
 
         val matchedPrefix = longestMatchingPrefix(number, policy.blockedPrefixes)
@@ -122,9 +122,7 @@ class CallDecisionEngine {
     private fun numbersMatch(left: String, right: String): Boolean {
         val a = normalize(left)
         val b = normalize(right)
-        return a.isNotEmpty() && b.isNotEmpty() && (
-            a == b || (a.length >= 7 && b.length >= 7 && a.takeLast(7) == b.takeLast(7))
-            )
+        return a.isNotEmpty() && b.isNotEmpty() && a == b
     }
 
     private fun isProtectedBankNumber(number: String): Boolean =
@@ -158,11 +156,19 @@ class CallDecisionEngine {
         private const val BANK = "bank"
         private const val CARRIER = "carrier"
 
-        fun normalize(value: String?): String = value
-            ?.trim()
-            ?.replace(Regex("[^0-9+]"), "")
-            ?.let { if (it.startsWith("+86")) it.drop(3) else it }
-            ?.let { if (it.startsWith("0086")) it.drop(4) else it }
-            ?: ""
+        fun normalize(value: String?): String {
+            val cleaned = value
+                ?.trim()
+                ?.replace(Regex("[^0-9+]"), "")
+                ?: return ""
+            if (cleaned == "+") return ""
+
+            return when {
+                cleaned.startsWith("+86") -> cleaned.drop(3)
+                cleaned.startsWith("0086") -> cleaned.drop(4)
+                cleaned.startsWith("86") && cleaned.length == 13 -> cleaned.drop(2)
+                else -> cleaned
+            }
+        }
     }
 }

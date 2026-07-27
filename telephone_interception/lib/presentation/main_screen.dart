@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/screening_controller.dart';
+import '../domain/models/call_record.dart';
 import 'pages/home_page.dart';
 import 'pages/numbers_page.dart';
 import 'pages/official_numbers_page.dart';
@@ -52,6 +53,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           onEnable: controller.requestRole,
           onSettingsChanged: controller.updateSettings,
           onOpenRecords: _openRecords,
+          onDialRecord: _confirmAndDial,
         ),
         RulesPage(
           settings: controller.settings,
@@ -97,17 +99,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.shield_outlined),
-              selectedIcon: Icon(Icons.shield),
+              selectedIcon: Icon(Icons.shield_rounded),
               label: '防护',
             ),
-            NavigationDestination(icon: Icon(Icons.tune), label: '规则'),
+            NavigationDestination(
+              icon: Icon(Icons.tune_rounded),
+              selectedIcon: Icon(Icons.tune_rounded),
+              label: '规则',
+            ),
             NavigationDestination(
               icon: Icon(Icons.contact_phone_outlined),
+              selectedIcon: Icon(Icons.contact_phone_rounded),
               label: '号码',
             ),
             NavigationDestination(
               icon: Icon(Icons.verified_outlined),
-              selectedIcon: Icon(Icons.verified),
+              selectedIcon: Icon(Icons.verified_rounded),
               label: '平台',
             ),
           ],
@@ -132,16 +139,46 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       MaterialPageRoute(
         builder: (_) => ListenableBuilder(
           listenable: controller,
-          builder: (context, _) => Scaffold(
-            appBar: AppBar(title: Text('来电记录（${controller.records.length}）')),
+          builder: (ctx, _) => Scaffold(
+            appBar: AppBar(
+              title: Text('来电记录（${controller.records.length}）'),
+              actions: [
+                if (controller.records.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    tooltip: '清空记录',
+                    onPressed: () async {
+                      final confirmed = await showActionConfirmation(
+                        ctx,
+                        title: '清空来电记录？',
+                        message: '号码规则不会受到影响。',
+                        confirmLabel: '清空',
+                        destructive: true,
+                      );
+                      if (confirmed) await controller.clearRecords();
+                    },
+                  ),
+              ],
+            ),
             body: RecordsPage(
               records: controller.records,
               onRefresh: controller.load,
-              onClear: controller.clearRecords,
+              onDialRecord: _confirmAndDial,
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAndDial(CallRecord record) async {
+    final confirmed = await showActionConfirmation(
+      context,
+      title: '回拨这个号码？',
+      message: '将打开系统拨号界面并填入 ${record.number}，请确认号码无误后再拨出。',
+      confirmLabel: '去拨号',
+    );
+    if (!confirmed) return;
+    await controller.dialNumber(record.number);
   }
 }

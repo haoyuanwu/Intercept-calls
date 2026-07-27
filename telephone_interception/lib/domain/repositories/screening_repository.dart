@@ -10,4 +10,5 @@ abstract interface class ScreeningRepository {
   Future<bool> requestScreeningRole();
   Future<void> openSystemSettings();
   Future<void> clearRecords();
+  Future<void> dialNumber(String number);
 }

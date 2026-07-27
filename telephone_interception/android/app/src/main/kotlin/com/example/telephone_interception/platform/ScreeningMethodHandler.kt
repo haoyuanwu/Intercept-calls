@@ -3,6 +3,7 @@ package com.example.telephone_interception.platform
 import android.app.Activity
 import android.app.role.RoleManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import com.example.telephone_interception.ScreeningStore
@@ -30,6 +31,7 @@ class ScreeningMethodHandler(
                 store.clearLogs()
                 result.success(true)
             }
+            "dialNumber" -> dialNumber(call.arguments, result)
             else -> result.notImplemented()
         }
     }
@@ -48,6 +50,28 @@ class ScreeningMethodHandler(
             return
         }
         store.saveSettings(values)
+        result.success(true)
+    }
+
+    private fun dialNumber(arguments: Any?, result: MethodChannel.Result) {
+        val values = arguments as? Map<*, *>
+        val number = values?.get("number")?.toString()
+            ?.trim()
+            ?.replace(Regex("[^0-9+*#]"), "")
+            .orEmpty()
+        if (number.isEmpty()) {
+            result.error("invalid_arguments", "电话号码不能为空", null)
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_DIAL).apply {
+            data = Uri.fromParts("tel", number, null)
+        }
+        if (intent.resolveActivity(activity.packageManager) == null) {
+            result.error("dialer_unavailable", "无法打开系统拨号界面", null)
+            return
+        }
+        activity.startActivity(intent)
         result.success(true)
     }
 

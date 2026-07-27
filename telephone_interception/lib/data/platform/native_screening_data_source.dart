@@ -8,6 +8,7 @@ abstract interface class ScreeningDataSource {
   Future<bool> requestRole();
   Future<void> openSettings();
   Future<void> clearRecords();
+  Future<void> dialNumber(String number);
 }
 
 class NativeScreeningDataSource implements ScreeningDataSource {
@@ -46,4 +47,8 @@ class NativeScreeningDataSource implements ScreeningDataSource {
 
   @override
   Future<void> clearRecords() => _channel.invokeMethod<void>('clearLogs');
+
+  @override
+  Future<void> dialNumber(String number) =>
+      _channel.invokeMethod<void>('dialNumber', {'number': number});
 }

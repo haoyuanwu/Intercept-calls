@@ -91,6 +91,15 @@ class ScreeningController extends ChangeNotifier {
     }
   }
 
+  Future<void> dialNumber(String number) async {
+    try {
+      await _repository.dialNumber(number);
+    } catch (error) {
+      noticeMessage = _messageOf(error, '无法打开拨号界面');
+      notifyListeners();
+    }
+  }
+
   String? takeNotice() {
     final message = noticeMessage;
     noticeMessage = null;

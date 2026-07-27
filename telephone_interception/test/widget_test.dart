@@ -17,7 +17,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('清净来电'), findsOneWidget);
-    expect(find.text('防护尚未生效'), findsOneWidget);
+    expect(find.text('未生效'), findsOneWidget);
     expect(find.text('立即开启系统权限'), findsOneWidget);
   });
 
@@ -62,11 +62,44 @@ void main() {
     );
     expect(find.text('最近来电'), findsOneWidget);
     expect(find.text('17012345678'), findsOneWidget);
+    expect(find.byTooltip('回拨 17012345678'), findsOneWidget);
     expect(find.text('记录'), findsNothing);
 
     await tester.tap(find.text('查看全部 1'));
     await tester.pumpAndSettle();
     expect(find.text('来电记录（1）'), findsOneWidget);
+  });
+
+  testWidgets('confirms before dialing a blocked record', (tester) async {
+    final repository = FakeScreeningRepository(
+      records: [
+        CallRecord(
+          number: '17012345678',
+          category: CallCategory.blockedPrefix,
+          action: CallAction.block,
+          reason: '命中用户号段 170',
+          timestamp: DateTime.now(),
+        ),
+      ],
+    );
+    await tester.pumpWidget(CleanCallApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('最近来电'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byTooltip('回拨 17012345678'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('回拨这个号码？'), findsOneWidget);
+    expect(repository.lastDialedNumber, isNull);
+
+    await tester.tap(find.text('去拨号'));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastDialedNumber, '17012345678');
   });
 
   testWidgets('previews prefixes and opens the complete list', (tester) async {
@@ -81,7 +114,7 @@ void main() {
     await tester.tap(find.text('号码'));
     await tester.pumpAndSettle();
 
-    expect(find.text('共 6 个'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
     expect(find.text('还有 2 个号段未显示'), findsOneWidget);
 
     await tester.tap(find.text('号段拦截'));
@@ -107,7 +140,7 @@ void main() {
     await tester.tap(find.text('号码'));
     await tester.pumpAndSettle();
 
-    expect(find.text('共 6 个'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
     expect(find.text('还有 2 个号码未显示'), findsOneWidget);
 
     await tester.tap(find.text('单个号码'));
@@ -154,9 +187,15 @@ class FakeScreeningRepository implements ScreeningRepository {
 
   ScreeningSettings settings;
   List<CallRecord> records;
+  String? lastDialedNumber;
 
   @override
   Future<void> clearRecords() async => records = const [];
+
+  @override
+  Future<void> dialNumber(String number) async {
+    lastDialedNumber = number;
+  }
 
   @override
   Future<List<CallRecord>> getRecords() async => records;

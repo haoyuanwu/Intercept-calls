@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/official_numbers/official_number_catalog.dart';
 import '../../domain/models/official_number.dart';
+import '../theme/design_tokens.dart';
 import '../widgets/common_widgets.dart';
 
 class OfficialNumbersPage extends StatefulWidget {
@@ -29,9 +30,7 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
   @override
   Widget build(BuildContext context) {
     final results = officialNumberCatalog.where((item) {
-      if (selectedCategory != null && item.category != selectedCategory) {
-        return false;
-      }
+      if (selectedCategory != null && item.category != selectedCategory) return false;
       final keyword = query.trim().toLowerCase();
       return keyword.isEmpty ||
           item.organization.toLowerCase().contains(keyword) ||
@@ -40,13 +39,13 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
     }).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      padding: const EdgeInsets.fromLTRB(Spacing.base, Spacing.sm, Spacing.base, Spacing.xl),
       children: [
         const NoticeCard(
           icon: Icons.verified_user_outlined,
           text: '以下为公开服务热线。来电号码可能被伪造，涉及转账、验证码或账户信息时，请复制号码后主动回拨核实。',
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Spacing.md),
         Row(
           children: [
             Expanded(
@@ -61,13 +60,11 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
                     ),
                     ...OfficialNumberCategory.values.map(
                       (category) => Padding(
-                        padding: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.only(left: Spacing.sm),
                         child: _CategoryChip(
-                          label:
-                              '${category.label} ${officialNumberCatalog.where((item) => item.category == category).length}',
+                          label: '${category.label} ${officialNumberCatalog.where((item) => item.category == category).length}',
                           selected: selectedCategory == category,
-                          onSelected: () =>
-                              setState(() => selectedCategory = category),
+                          onSelected: () => setState(() => selectedCategory = category),
                         ),
                       ),
                     ),
@@ -75,14 +72,14 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: Spacing.sm),
             IconButton.filledTonal(
               tooltip: searchVisible ? '收起搜索' : '搜索平台号码',
               onPressed: _toggleSearch,
               icon: AnimatedRotation(
                 turns: searchVisible ? .25 : 0,
                 duration: const Duration(milliseconds: 220),
-                child: Icon(searchVisible ? Icons.close : Icons.search),
+                child: Icon(searchVisible ? Icons.close_rounded : Icons.search_rounded),
               ),
             ),
           ],
@@ -94,16 +91,12 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
           switchOutCurve: Curves.easeInCubic,
           transitionBuilder: (child, animation) => FadeTransition(
             opacity: animation,
-            child: SizeTransition(
-              sizeFactor: animation,
-              alignment: Alignment.topCenter,
-              child: child,
-            ),
+            child: SizeTransition(sizeFactor: animation, alignment: Alignment.topCenter, child: child),
           ),
           child: searchVisible
               ? Padding(
                   key: const ValueKey('search-field'),
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: Spacing.md),
                   child: SearchBar(
                     controller: searchController,
                     focusNode: searchFocusNode,
@@ -111,11 +104,9 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
                     hintText: '搜索机构名称或电话号码',
                     elevation: const WidgetStatePropertyAll(0),
                     side: WidgetStatePropertyAll(
-                      BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
+                      BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
-                    leading: const Icon(Icons.search),
+                    leading: const Icon(Icons.search_rounded),
                     trailing: [
                       if (query.isNotEmpty)
                         IconButton(
@@ -129,12 +120,12 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
                 )
               : const SizedBox.shrink(key: ValueKey('search-hidden')),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Spacing.md),
         if (results.isEmpty)
           const SizedBox(
             height: 320,
             child: EmptyState(
-              icon: Icons.search_off,
+              icon: Icons.search_off_rounded,
               title: '没有找到号码',
               subtitle: '请尝试搜索机构简称或电话号码',
             ),
@@ -176,14 +167,14 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
       if (items.isEmpty) return const <Widget>[];
       return <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+          padding: const EdgeInsets.fromLTRB(2, Spacing.sm, 2, Spacing.sm),
           child: Row(
             children: [
-              Icon(category.icon, size: 20, color: category.color),
-              const SizedBox(width: 8),
+              Icon(category.icon, size: 18, color: category.color),
+              const SizedBox(width: Spacing.sm),
               Text(
                 '${category.label} · ${items.length}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -191,15 +182,15 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
         Card(
           child: Column(
             children: [
-              for (var index = 0; index < items.length; index++) ...[
-                _OfficialNumberTile(item: items[index], onCopy: _copy),
-                if (index != items.length - 1)
-                  const Divider(height: 1, indent: 68),
+              for (var i = 0; i < items.length; i++) ...[
+                _OfficialNumberTile(item: items[i], onCopy: _copy),
+                if (i != items.length - 1)
+                  const Divider(height: 1, indent: 64),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Spacing.md),
       ];
     }).toList();
   }
@@ -209,9 +200,7 @@ class _OfficialNumbersPageState extends State<OfficialNumbersPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('已复制 ${item.organization}：${item.number}')),
-      );
+      ..showSnackBar(SnackBar(content: Text('已复制 ${item.organization}：${item.number}')));
   }
 }
 
@@ -222,21 +211,14 @@ class _OfficialNumberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    contentPadding: const EdgeInsets.fromLTRB(16, 5, 8, 5),
-    leading: CircleAvatar(
-      backgroundColor: item.category.color.withValues(alpha: .1),
-      foregroundColor: item.category.color,
-      child: Icon(item.category.icon),
-    ),
-    title: Text(
-      item.organization,
-      style: const TextStyle(fontWeight: FontWeight.w600),
-    ),
+    contentPadding: const EdgeInsets.fromLTRB(Spacing.base, 3, Spacing.sm, 3),
+    leading: LeadingBadge(icon: item.category.icon, color: item.category.color),
+    title: Text(item.organization),
     subtitle: Text('${item.number} · ${item.description}'),
     trailing: IconButton(
       tooltip: '复制 ${item.number}',
       onPressed: () => onCopy(item),
-      icon: const Icon(Icons.copy_outlined),
+      icon: const Icon(Icons.copy_outlined, color: T.inkSubtle),
     ),
     onTap: () => onCopy(item),
   );
@@ -268,14 +250,14 @@ extension on OfficialNumberCategory {
   };
 
   IconData get icon => switch (this) {
-    OfficialNumberCategory.bank => Icons.account_balance_outlined,
-    OfficialNumberCategory.carrier => Icons.cell_tower_outlined,
-    OfficialNumberCategory.government => Icons.apartment_outlined,
+    OfficialNumberCategory.bank => Icons.account_balance_rounded,
+    OfficialNumberCategory.carrier => Icons.cell_tower_rounded,
+    OfficialNumberCategory.government => Icons.apartment_rounded,
   };
 
   Color get color => switch (this) {
-    OfficialNumberCategory.bank => const Color(0xFF3F72AF),
-    OfficialNumberCategory.carrier => const Color(0xFF176B5B),
+    OfficialNumberCategory.bank => T.info,
+    OfficialNumberCategory.carrier => T.brand,
     OfficialNumberCategory.government => const Color(0xFF7558A6),
   };
 }
